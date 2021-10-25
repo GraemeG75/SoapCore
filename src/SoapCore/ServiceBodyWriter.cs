@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -183,10 +184,31 @@ namespace SoapCore
 					}
 					else
 					{
-						if (_result is XmlDocument || _result is XDocument)
+						//if the result is XmlDocument or XDocument, (probably need to do this for XmlNode, XElement etc  as well)
+						// then just write the xml using WriteRaw(string)
+						Type[] types =
 						{
+							typeof(XmlDocument),
+							typeof(XDocument)
+						};
+
+						if (types.Contains(resultType))
+						{
+							string xml = string.Empty;
+
+							if (resultType == typeof(XmlDocument))
+							{
+								XmlDocument document = (XmlDocument) _result;
+								xml = document.InnerXml;
+							}
+							else if (resultType == typeof(XDocument))
+							{
+								XDocument document = (XDocument)_result;
+								xml = document.ToString();
+							}
+
 							writer.WriteStartElement(_resultName, _serviceNamespace);
-							writer.WriteRaw(_result.ToString());
+							writer.WriteRaw(xml);
 							writer.WriteEndElement();
 						}
 						else

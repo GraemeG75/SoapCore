@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 using SoapCore.ServiceModel;
 
@@ -182,27 +183,41 @@ namespace SoapCore
 					}
 					else
 					{
-						var serializer = CachedXmlSerializer.GetXmlSerializer(resultType, xmlName, xmlNs);
-
-						if (_result is Stream)
+						if (_result is XmlDocument || _result is XDocument)
 						{
 							writer.WriteStartElement(_resultName, _serviceNamespace);
-							WriteStream(writer, _result);
+							writer.WriteRaw(_result.ToString());
 							writer.WriteEndElement();
 						}
 						else
 						{
-							//https://github.com/DigDes/SoapCore/issues/385
-							if (_operation.DispatchMethod.GetCustomAttribute<XmlSerializerFormatAttribute>()?.Style == OperationFormatStyle.Rpc)
-							{
-								var importer = new SoapReflectionImporter(_serviceNamespace);
-								var typeMapping = importer.ImportTypeMapping(resultType);
-								var accessor = typeMapping.GetType().GetProperty("Accessor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(typeMapping);
-								accessor?.GetType().GetProperty("Name", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.SetValue(accessor, xmlName);
-								new XmlSerializer(typeMapping).Serialize(writer, _result);
-							}
+							var serializer = CachedXmlSerializer.GetXmlSerializer(resultType, xmlName, xmlNs);
 
-							serializer.Serialize(writer, _result);
+							if (_result is Stream)
+							{
+								writer.WriteStartElement(_resultName, _serviceNamespace);
+								WriteStream(writer, _result);
+								writer.WriteEndElement();
+							}
+							else
+							{
+								//https://github.com/DigDes/SoapCore/issues/385
+								if (_operation.DispatchMethod.GetCustomAttribute<XmlSerializerFormatAttribute>()
+									?.Style == OperationFormatStyle.Rpc)
+								{
+									var importer = new SoapReflectionImporter(_serviceNamespace);
+									var typeMapping = importer.ImportTypeMapping(resultType);
+									var accessor = typeMapping.GetType()
+										.GetProperty("Accessor", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+										?.GetValue(typeMapping);
+									accessor?.GetType()
+										.GetProperty("Name", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+										?.SetValue(accessor, xmlName);
+									new XmlSerializer(typeMapping).Serialize(writer, _result);
+								}
+
+								serializer.Serialize(writer, _result);
+							}
 						}
 					}
 				}

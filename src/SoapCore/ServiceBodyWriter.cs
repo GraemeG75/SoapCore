@@ -201,7 +201,9 @@ namespace SoapCore
 							{
 								//this is ugly, but we need to remove the XML declaration from the xmldocument, so the easiest way to to write the xml to a stringbuilder omitting teh xml declaration
 								StringBuilder xmlStringBuilder = new StringBuilder();
+
 								using XmlWriter xmlWriter = XmlWriter.Create(xmlStringBuilder, new XmlWriterSettings { OmitXmlDeclaration = true });
+
 								XmlDocument document = (XmlDocument)_result;
 								document.Save(xmlWriter);
 
